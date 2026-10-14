@@ -10,13 +10,12 @@ APP="build/Remember Who You Are.app"
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp "$BIN" "$APP/Contents/MacOS/RememberWhoYouAre"
 mkdir -p "$APP/Contents/Resources"
-cp Resources/AppIcon.png "$APP/Contents/Resources/AppIcon.png"
-ICONSET=$(mktemp -d)/AppIcon.iconset; mkdir -p "$ICONSET"
-for s in 16 32 128 256 512; do
-  sips -z $s $s Resources/AppIcon.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
-  sips -z $((s*2)) $((s*2)) Resources/AppIcon.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
-done
-iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+# Compile the Icon Composer source (Resources/tung.icon) into Assets.car + AppIcon.icns.
+ICON_OUT=$(mktemp -d)
+xcrun actool Resources/tung.icon --compile "$ICON_OUT" --platform macosx --minimum-deployment-target 26.0 \
+  --app-icon tung --output-partial-info-plist "$ICON_OUT/partial.plist" >/dev/null
+cp "$ICON_OUT/Assets.car" "$APP/Contents/Resources/Assets.car"
+cp "$ICON_OUT/tung.icns" "$APP/Contents/Resources/AppIcon.icns"
 mkdir -p "$APP/Contents/Frameworks"
 SPARKLE=$(find .build/artifacts -type d -name Sparkle.framework -path "*macos*" | head -1)
 cp -R "$SPARKLE" "$APP/Contents/Frameworks/"
@@ -33,6 +32,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>CFBundleVersion</key><string>${BUILD}</string>
 <key>LSMinimumSystemVersion</key><string>26.0</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
+<key>CFBundleIconName</key><string>tung</string>
 <key>LSUIElement</key><true/>
 <key>SUFeedURL</key><string>${RWYA_FEED_URL:-https://rckbrcls.github.io/remember-who-you-are/appcast.xml}</string>
 <key>SUPublicEDKey</key><string>${RWYA_ED_KEY:-}</string>
