@@ -2,6 +2,9 @@
 # Builds a release binary and wraps it in a menu-bar-only .app bundle.
 set -euo pipefail
 cd "$(dirname "$0")"
+# Sparkle feed and public EdDSA key (the private key lives in the SPARKLE_EDDSA_PRIVATE_KEY secret).
+RWYA_FEED_URL="${RWYA_FEED_URL:-https://rckbrcls.com/api/remember-who-you-are/appcast.xml}"
+RWYA_ED_KEY="${RWYA_ED_KEY:-c3jKYVWrrjNacKjLqspxj/rlbVeDt13eC+lH4Cc5inU=}"
 VERSION="${VERSION:-0.1.0}"
 BUILD="${BUILD:-1}"
 swift build -c release --arch arm64 --arch x86_64
@@ -34,14 +37,16 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIconName</key><string>tung</string>
 <key>LSUIElement</key><true/>
-<key>SUFeedURL</key><string>${RWYA_FEED_URL:-https://rckbrcls.github.io/remember-who-you-are/appcast.xml}</string>
-<key>SUPublicEDKey</key><string>${RWYA_ED_KEY:-}</string>
+<key>SUFeedURL</key><string>${RWYA_FEED_URL}</string>
+<key>SUPublicEDKey</key><string>${RWYA_ED_KEY}</string>
 <key>SUEnableAutomaticChecks</key><false/>
 <key>SUScheduledCheckInterval</key><integer>86400</integer>
 </dict></plist>
 PLIST
 codesign --force --deep --sign - "$APP" >/dev/null
 echo "Built: $APP"
-pkill -9 -x RememberWhoYouAre 2>/dev/null || true
-sleep 1
-open "$APP"
+if [ -z "${RWYA_NO_LAUNCH:-}" ]; then
+  pkill -9 -x RememberWhoYouAre 2>/dev/null || true
+  sleep 1
+  open "$APP"
+fi
