@@ -6,6 +6,13 @@
         <description>Remember Who You Are updates</description>
         <language>en</language>
         <item>
+            <title>Version 0.1.1</title>
+            <pubDate>Wed, 14 Oct 2026 03:00:55 +0000</pubDate>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/rckbrcls/remember-who-you-are/releases/download/v0.1.1/RememberWhoYouAre-macos-universal-v0.1.1.zip" sparkle:version="2" sparkle:shortVersionString="0.1.1" sparkle:edSignature="Jo5VhVMOD0tJUT/HpBhsStDgf+LDV4p6zvA8qG8zTClKIpwHx9GpO+I/RKOQLhDi43ZWbr3rGdu2uYVdskS7Ag==" sparkle:os="macos" length="4416648" type="application/zip" />
+            <description>Remember Who You Are 0.1.1.</description>
+        </item>
+        <item>
             <title>Version 0.1.0</title>
             <pubDate>Wed, 14 Oct 2026 02:56:59 +0000</pubDate>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
