@@ -33,10 +33,7 @@ def load_or_create_appcast(path, title, link, description, language):
 
     root = ET.Element(
         "rss",
-        {
-            "version": "2.0",
-            "xmlns:sparkle": SPARKLE_NS,
-        },
+        {"version": "2.0"},
     )
     channel = ET.SubElement(root, "channel")
     ET.SubElement(channel, "title").text = title
