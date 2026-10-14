@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>Remember Who You Are</title>
+        <link>https://github.com/rckbrcls/remember-who-you-are</link>
+        <description>Remember Who You Are updates</description>
+        <language>en</language>
+        <item>
+            <title>Version 0.1.0</title>
+            <pubDate>Wed, 14 Oct 2026 02:56:59 +0000</pubDate>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/rckbrcls/remember-who-you-are/releases/download/v0.1.0/RememberWhoYouAre-macos-universal-v0.1.0.zip" sparkle:version="1" sparkle:shortVersionString="0.1.0" sparkle:edSignature="lf7Yuu951iwbCG8IgJfOU5uulgfDTnsS6IAPTsBb2WCILyKSblDDl5FG+0aDxnFuxJYTCu6Adso+QZyIr8egCw==" sparkle:os="macos" length="4416652" type="application/zip" />
+            <description>Remember Who You Are 0.1.0.</description>
+        </item>
+    </channel>
+</rss>
