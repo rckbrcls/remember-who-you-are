@@ -24,13 +24,32 @@ struct PopoverView: View {
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
             .glassEffect(.regular, in: .rect(cornerRadius: 14))
+
+            HStack(spacing: 8) {
+                Picker("Mode", selection: model.binding(\.modeRaw)) {
+                    ForEach(PracticeMode.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+                Spacer(minLength: 0)
+                DifficultyChips(model: model)
+            }
             Divider()
 
             if let problem = model.problem {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(problem.title).font(.title3.bold())
-                    Text("\(problem.difficulty.rawValue) · ~\(problem.minutes) min")
-                        .font(.caption).foregroundStyle(.secondary)
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(problem.title).font(.title3.bold())
+                        Text("\(problem.difficulty.rawValue) · ~\(problem.minutes) min")
+                            .font(.caption).foregroundStyle(.secondary)
+                        if let domain = model.domainProgress, let overall = model.roadmapProgress {
+                            Text("\(domain) · \(overall)")
+                                .font(.caption2).foregroundStyle(.tertiary)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    CopyLinkButton(model: model)
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -57,6 +76,8 @@ struct PopoverView: View {
                     }
                     .controlSize(.large)
                 }
+            } else if model.roadmapProgress != nil {
+                Text("\(model.mode.title) done for these difficulties. Who even are you? 🏆").font(.subheadline)
             } else {
                 Text("You solved everything in this difficulty. Suspicious. 🤨").font(.subheadline)
             }
@@ -97,14 +118,36 @@ struct SettingsView: View {
                 Stepper("Remind after \(model.delayMinutes) min of agent work", value: model.$delayMinutes, in: 1...30)
             } header: { Label("Reminder", systemImage: "bell") }
             Section {
-                Toggle("Easy", isOn: model.$includeEasy)
-                Toggle("Medium", isOn: model.$includeMedium)
-                Toggle("Hard", isOn: model.$includeHard)
+                Picker("Problems", selection: model.binding(\.modeRaw)) {
+                    ForEach(PracticeMode.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                if model.mode != .random {
+                    Picker("Progression", selection: model.binding(\.orderRaw)) {
+                        ForEach(RoadmapOrder.allCases) { Text($0.title).tag($0.rawValue) }
+                    }
+                    if let progress = model.roadmapProgress {
+                        LabeledContent("Progress", value: progress)
+                    }
+                }
+            } header: { Label("Roadmap", systemImage: "map") } footer: {
+                if model.mode != .random {
+                    Text("Premium-only problems are left out. Done problems count toward every roadmap.")
+                }
+            }
+            Section {
+                Toggle("Easy", isOn: model.binding(\.includeEasy)).disabled(model.difficulties == [.easy])
+                Toggle("Medium", isOn: model.binding(\.includeMedium)).disabled(model.difficulties == [.medium])
+                Toggle("Hard", isOn: model.binding(\.includeHard)).disabled(model.difficulties == [.hard])
             } header: { Label("Difficulty", systemImage: "gauge.with.dots.needle.67percent") }
             Section {
                 Toggle("Show problem in menu bar", isOn: model.$showTitleInMenuBar)
-                Toggle("Auto-open popover when the reminder is due", isOn: model.$autoOpenPopover)
             } header: { Label("Menu bar", systemImage: "menubar.rectangle") }
+            Section {
+                Picker("When the reminder is due", selection: model.$reminderStyleRaw) {
+                    ForEach(ReminderStyle.allCases) { Text($0.label).tag($0.rawValue) }
+                }
+                Button("Preview alert") { model.previewReminder() }
+            } header: { Label("Nagging", systemImage: "exclamationmark.bubble") }
             Section {
                 Toggle("Check for updates automatically", isOn: Binding(
                     get: { updates.automaticChecks }, set: { updates.automaticChecks = $0 }))
@@ -116,7 +159,64 @@ struct SettingsView: View {
             } header: { Label("General", systemImage: "gearshape") }
         }
         .formStyle(.grouped)
-        .frame(width: 400, height: 520)
+        .frame(width: 440, height: 720)
+    }
+}
+
+/// Multi-select Easy / Medium / Hard; at least one always stays on.
+struct DifficultyChips: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(Difficulty.allCases, id: \.self) { d in
+                let on = model.isIncluded(d)
+                Button { model.toggle(d) } label: {
+                    Text(d.short)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .foregroundStyle(on ? Color.white : Color.secondary)
+                        .background(on ? d.tint : Color.primary.opacity(0.08), in: .capsule)
+                        .contentShape(.capsule)
+                }
+                .buttonStyle(.plain)
+                .help(on ? "Stop recommending \(d.rawValue) problems" : "Recommend \(d.rawValue) problems")
+            }
+        }
+        .animation(.snappy(duration: 0.15), value: model.difficulties)
+    }
+}
+
+extension Difficulty {
+    var short: String { self == .medium ? "Med" : rawValue }
+    var tint: Color {
+        switch self {
+        case .easy: return .green
+        case .medium: return .orange
+        case .hard: return .red
+        }
+    }
+}
+
+/// Copies the problem URL and flashes a checkmark.
+struct CopyLinkButton: View {
+    @ObservedObject var model: AppModel
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            model.copyLink()
+            copied = true
+            Task { try? await Task.sleep(for: .seconds(1.2)); copied = false }
+        } label: {
+            Image(systemName: copied ? "checkmark" : "link")
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 28, height: 28)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        .help("Copy problem link")
     }
 }
 
