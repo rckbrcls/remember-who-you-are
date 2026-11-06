@@ -30,7 +30,7 @@ final class ReminderPanel {
     var isVisible: Bool { panel?.isVisible == true }
 
     func show(model: AppModel) {
-        if let panel { panel.orderFrontRegardless(); return }
+        if let panel { panel.makeKeyAndOrderFront(nil); return }
 
         let panel = FloatingPanel(
             contentRect: NSRect(x: 0, y: 0, width: 440, height: 400),
@@ -99,45 +99,18 @@ private struct ReminderAlertView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
-            if let problem = model.problem {
-                VStack(spacing: 4) {
-                    Text(problem.title).font(.title2.bold()).multilineTextAlignment(.center)
-                    Text("\(problem.difficulty.rawValue) · ~\(problem.minutes) min")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                    if let domain = model.domainProgress, let overall = model.roadmapProgress {
-                        Text("\(domain) · \(overall)").font(.caption).foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .trailing) { CopyLinkButton(model: model).padding(.trailing, 10) }
-                .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            PracticeStack(model: model, afterAction: dismiss, large: true)
+            Divider()
 
-                GlassEffectContainer(spacing: 8) {
-                    VStack(spacing: 8) {
-                        Button { model.solve(); dismiss() } label: {
-                            Text("Solve on LeetCode").frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.glassProminent)
-                        .keyboardShortcut(.defaultAction)
-                        HStack(spacing: 8) {
-                            Button { model.markDone(); dismiss() } label: {
-                                Text("Done").frame(maxWidth: .infinity, minHeight: 40)
-                            }
-                            Button { model.skip(); dismiss() } label: {
-                                Text(model.skipLabel)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .frame(maxWidth: .infinity, minHeight: 40)
-                            }
-                        }
-                        .buttonStyle(.glass)
+            StackSection("Snooze") {
+                HStack(spacing: 6) {
+                    ForEach(AppModel.SnoozeLength.allCases) { len in
+                        Button(len.label) { model.snooze(len) }
+                            .buttonStyle(.glass)
+                            .controlSize(.small)
                     }
-                    .controlSize(.large)
+                    Spacer(minLength: 0)
                 }
-            } else {
-                Button("Close", action: dismiss).buttonStyle(.glass).controlSize(.large)
             }
 
             Text("Esc to pretend you didn't see this")
@@ -151,6 +124,7 @@ private struct ReminderAlertView: View {
         .padding(Self.margin)
         .scaleEffect(appeared ? 1 : 0.85)
         .opacity(appeared ? 1 : 0)
+        .onExitCommand(perform: dismiss)
         .onAppear {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { appeared = true }
         }
