@@ -120,6 +120,18 @@ private struct ReminderAlertView: View {
         .padding(28)
         .frame(width: 420)
         .glassEffect(.regular, in: .rect(cornerRadius: 32))
+        .overlay(alignment: .topTrailing) {
+            Button(action: dismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .bold))
+                    .frame(width: 30, height: 30)
+                    .contentShape(.circle)
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .help("Close (Esc)")
+            .padding(16)
+        }
         .shadow(color: .black.opacity(0.35), radius: 24, y: 10)
         .padding(Self.margin)
         .scaleEffect(appeared ? 1 : 0.85)
