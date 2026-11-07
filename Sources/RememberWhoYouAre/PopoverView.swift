@@ -142,6 +142,9 @@ struct SettingsView: View {
                         Text("Every \(intervalLabel(model.intervalMinutes))")
                     }
                 }
+                Stepper(value: model.binding(\.minimumGapMinutes), in: 5...120, step: 5) {
+                    Text("At most one reminder every \(intervalLabel(model.minimumGapMinutes))")
+                }
             } header: { Label("Remind me", systemImage: "bell") } footer: {
                 Text("Solving a problem restarts the timer. Nothing fires while snoozed or after today's goal is met.")
             }

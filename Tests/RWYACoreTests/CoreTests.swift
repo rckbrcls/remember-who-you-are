@@ -199,6 +199,34 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(DailyLog.key(for: h[0].day, calendar: cal), "2026-11-06")
     }
 
+    func testReminderClockMinimumGapStopsPileUps() {
+        let t0 = Date(timeIntervalSince1970: 0)
+        var clock = ReminderClock(rules: ReminderRules(onAgent: true, agentDelay: 0, minimumGap: 600), now: t0)
+        XCTAssertEqual(clock.evaluate(now: t0, agentWorkingSince: t0, goalMet: false), .agent)
+        // The agent pauses and resumes (a "new run") a minute later: no second alert yet.
+        XCTAssertNil(clock.evaluate(now: t0.addingTimeInterval(30), agentWorkingSince: nil, goalMet: false))
+        let run2 = t0.addingTimeInterval(60)
+        XCTAssertNil(clock.evaluate(now: run2, agentWorkingSince: run2, goalMet: false))
+        XCTAssertNil(clock.evaluate(now: t0.addingTimeInterval(599), agentWorkingSince: run2, goalMet: false,
+                                    streakWarning: 900))
+        // Gap over: the pending reminder fires once.
+        XCTAssertNotNil(clock.evaluate(now: t0.addingTimeInterval(600), agentWorkingSince: run2, goalMet: false,
+                                       streakWarning: 900))
+        XCTAssertNil(clock.evaluate(now: t0.addingTimeInterval(603), agentWorkingSince: run2, goalMet: false,
+                                    streakWarning: 900))
+    }
+
+    func testDetectorToleratesShortPauses() {
+        var d = AgentDetector(requiredMisses: 20)
+        let busy = [ProcessSample(command: "/usr/local/bin/claude", cpu: 30)]
+        d.ingest(busy); d.ingest(busy)
+        guard case .working(_, let since) = d.state else { return XCTFail() }
+        for _ in 0..<10 { d.ingest([]) } // ~30 s waiting on the model
+        d.ingest(busy)
+        guard case .working(_, let again) = d.state else { return XCTFail() }
+        XCTAssertEqual(since, again, "a pause shouldn't start a new run")
+    }
+
     func testSkipPhrasesEscalate() {
         XCTAssertEqual(SkipPhrases.phrase(forSkipCount: 0), SkipPhrases.regular[0])
         XCTAssertEqual(SkipPhrases.phrase(forSkipCount: 3), SkipPhrases.streak)

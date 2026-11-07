@@ -24,6 +24,7 @@ final class AppModel: ObservableObject {
     @AppStorage("remindOnAgent") var remindOnAgent = true { didSet { rulesChanged() } }
     @AppStorage("remindOnInterval") var remindOnInterval = false { didSet { rulesChanged() } }
     @AppStorage("intervalMinutes") var intervalMinutes = 60 { didSet { rulesChanged() } }
+    @AppStorage("minimumGapMinutes") var minimumGapMinutes = 20 { didSet { rulesChanged() } }
     @AppStorage("goalEasy") var goalEasy = 0 { didSet { goalChanged() } }
     @AppStorage("goalMedium") var goalMedium = 0 { didSet { goalChanged() } }
     @AppStorage("goalHard") var goalHard = 0 { didSet { goalChanged() } }
@@ -42,7 +43,9 @@ final class AppModel: ObservableObject {
     /// Roadmap problems skipped this run; they come back once everything else is done.
     private var roadmapSkipped = Set<String>()
 
-    private var detector = AgentDetector()
+    /// 20 quiet samples × 3 s ≈ 1 min: agents idle while waiting on the model or a tool,
+    /// and those pauses shouldn't count as a new run (each run gets its own reminder).
+    private var detector = AgentDetector(requiredMisses: 20)
     private var picker = ProblemPicker()
     private var done: Set<String>
     private var timer: Timer?
@@ -103,7 +106,8 @@ final class AppModel: ObservableObject {
 
     private var rules: ReminderRules {
         ReminderRules(onAgent: remindOnAgent, agentDelay: Double(delayMinutes) * 60,
-                      onInterval: remindOnInterval, interval: Double(intervalMinutes) * 60)
+                      onInterval: remindOnInterval, interval: Double(intervalMinutes) * 60,
+                      minimumGap: Double(minimumGapMinutes) * 60)
     }
 
     /// Difficulties with a target today, with progress — what the goal row shows.

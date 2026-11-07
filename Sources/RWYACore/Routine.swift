@@ -152,9 +152,14 @@ public struct ReminderRules: Equatable, Sendable {
     /// Nag every `interval`, agent or not.
     public var onInterval: Bool
     public var interval: TimeInterval
+    /// No reminder of any kind fires sooner than this after the previous one.
+    /// Keeps agent, interval and streak reminders from piling up back to back.
+    public var minimumGap: TimeInterval
 
-    public init(onAgent: Bool = true, agentDelay: TimeInterval = 120, onInterval: Bool = false, interval: TimeInterval = 3600) {
-        self.onAgent = onAgent; self.agentDelay = agentDelay; self.onInterval = onInterval; self.interval = interval
+    public init(onAgent: Bool = true, agentDelay: TimeInterval = 120, onInterval: Bool = false,
+                interval: TimeInterval = 3600, minimumGap: TimeInterval = 0) {
+        self.onAgent = onAgent; self.agentDelay = agentDelay; self.onInterval = onInterval
+        self.interval = interval; self.minimumGap = minimumGap
     }
 }
 
@@ -168,6 +173,8 @@ public struct ReminderClock: Sendable {
     public private(set) var anchor: Date
     public private(set) var naggedForAgentRun = false
     public private(set) var lastStreakNag: Date?
+    /// When any reminder last fired.
+    public private(set) var lastNag: Date?
 
     public init(rules: ReminderRules, now: Date = Date(), snoozedUntil: Date? = nil) {
         self.rules = rules
@@ -185,6 +192,15 @@ public struct ReminderClock: Sendable {
         if let until = snoozedUntil, now >= until { snoozedUntil = nil }
         // Goal met or snoozed: stay quiet. An agent run that started meanwhile still gets its nag later.
         if goalMet || isSnoozed(at: now) { return nil }
+        // Too soon after the last one: wait. Whatever was due fires once the gap has passed.
+        if let lastNag, now.timeIntervalSince(lastNag) < rules.minimumGap { return nil }
+        guard let reason = dueReason(now: now, agentWorkingSince: agentWorkingSince, streakWarning: streakWarning)
+        else { return nil }
+        lastNag = now
+        return reason
+    }
+
+    private mutating func dueReason(now: Date, agentWorkingSince: Date?, streakWarning: TimeInterval?) -> NagReason? {
 
         // A streak about to die beats everything else, and gets louder as midnight nears.
         if let every = streakWarning {
